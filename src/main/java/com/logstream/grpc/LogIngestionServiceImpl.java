@@ -1,73 +1,19 @@
-package com.logstream.grpc;
+package com.logstream.logstreambackend;
 
-import com.logstream.lucene.LogIndexService;
-import io.grpc.stub.StreamObserver;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
+@RestController
+public class LogIngestionServiceImpl {
 
-public class LogIngestionServiceImpl
-        extends LogIngestionServiceGrpc.LogIngestionServiceImplBase {
+    @PostMapping("/api/test-live-log")
+    public String sendTestLog() {
 
-    private final AtomicLong totalLogsReceived = new AtomicLong(0);
+        String liveLog =
+                "[ERROR] billing-api - Database connection failed";
 
-    private final LogIndexService logIndexService;
+        LogWebSocketHandler.broadcastLog(liveLog);
 
-    public LogIngestionServiceImpl(
-            LogIndexService logIndexService) {
-
-        this.logIndexService = logIndexService;
-    }
-
-    @Override
-    public void sendLog(
-            LogMessage request,
-            StreamObserver<LogResponse> responseObserver) {
-
-        try {
-
-            // 1. Receive the log through gRPC
-            long count = totalLogsReceived.incrementAndGet();
-
-            // 2. Index the log into Apache Lucene
-            logIndexService.indexLog(request);
-
-            // 3. Commit periodically
-            if (count % 100 == 0) {
-                logIndexService.commit();
-            }
-
-            // Print progress
-            if (count % 1000 == 0) {
-                System.out.println(
-                        "Logs received and indexed: " + count
-                );
-            }
-
-            // 4. Send response to client
-            LogResponse response = LogResponse.newBuilder()
-                    .setSuccess(true)
-                    .setMessage("Log received and indexed successfully")
-                    .build();
-
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            LogResponse response = LogResponse.newBuilder()
-                    .setSuccess(false)
-                    .setMessage("Failed to index log: " + e.getMessage())
-                    .build();
-
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        }
-    }
-
-    public long getTotalLogsReceived() {
-        return totalLogsReceived.get();
+        return "Test log sent to Live Tail";
     }
 }

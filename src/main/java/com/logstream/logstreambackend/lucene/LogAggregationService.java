@@ -23,14 +23,19 @@ public class LogAggregationService {
     private final Directory directory;
 
     public LogAggregationService() throws Exception {
-        directory = FSDirectory.open(
-                Paths.get("data/lucene-index")
-        );
+        directory = FSDirectory.open(Paths.get("data/lucene-index"));
     }
 
     public Map<String, Long> getLogsPerMinute() throws Exception {
 
         Map<String, Long> counts = new TreeMap<>();
+
+        long currentTime = System.currentTimeMillis();
+        long oneHourAgo = currentTime - (60 * 60 * 1000);
+
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("HH:mm")
+                        .withZone(ZoneId.systemDefault());
 
         try (DirectoryReader reader = DirectoryReader.open(directory)) {
 
@@ -40,10 +45,6 @@ public class LogAggregationService {
                     new MatchAllDocsQuery(),
                     reader.numDocs()
             );
-
-            DateTimeFormatter formatter =
-                    DateTimeFormatter.ofPattern("HH:mm")
-                            .withZone(ZoneId.systemDefault());
 
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
 
@@ -57,16 +58,22 @@ public class LogAggregationService {
                 }
 
                 try {
+
                     long millis = Long.parseLong(timestamp);
 
-                    String minute = formatter.format(
-                            Instant.ofEpochMilli(millis)
-                    );
+                    // Only include logs from the last 60 minutes
+                    if (millis >= oneHourAgo && millis <= currentTime) {
 
-                    counts.put(
-                            minute,
-                            counts.getOrDefault(minute, 0L) + 1
-                    );
+                        String minute =
+                                formatter.format(
+                                        Instant.ofEpochMilli(millis)
+                                );
+
+                        counts.put(
+                                minute,
+                                counts.getOrDefault(minute, 0L) + 1
+                        );
+                    }
 
                 } catch (NumberFormatException ignored) {
                 }
