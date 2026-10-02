@@ -23,10 +23,13 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 logWebSocketHandler,
                 "/ws/logs"
         ).setAllowedOrigins(
-                "http://localhost:5175",
-                "http://localhost:5176",
-                "http://localhost:5177",
-                "http://localhost:5182"
-        );
+                                "http://localhost:5175",
+                                "http://localhost:5176",
+                                "http://localhost:5177",
+                                "http://localhost:5178",
+                                "http://localhost:5179",
+                                "http://localhost:5182"
+                        );
+
     }
 }

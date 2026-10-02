@@ -4,7 +4,7 @@ import com.logstream.lucene.LogIndexService;
 import io.grpc.stub.StreamObserver;
 
 import java.util.concurrent.atomic.AtomicLong;
-
+import com.logstream.logstreambackend.LogWebSocketHandler;
 public class LogIngestionServiceImpl
         extends LogIngestionServiceGrpc.LogIngestionServiceImplBase {
 
@@ -24,10 +24,15 @@ public class LogIngestionServiceImpl
             long count = totalLogsReceived.incrementAndGet();
 
             logIndexService.indexLog(request);
+            String liveLog =
+                    "[" + request.getLevel() + "] "
+                            + request.getService()
+                            + " - "
+                            + request.getMessage();
 
-            if (count % 100 == 0) {
-                logIndexService.commit();
-            }
+            LogWebSocketHandler.broadcastLog(liveLog);
+
+            logIndexService.commit();
 
             if (count % 1000 == 0) {
                 System.out.println(
