@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### LogStream generated files ###
+data/lucene-index/
